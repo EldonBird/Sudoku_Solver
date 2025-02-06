@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::HashSet;
 use std::io::empty;
 
 struct Tile{
@@ -33,6 +34,20 @@ fn EvaluateTile(tile: Tile, board: [[Tile; 9]; 9]) -> [bool; 9] {
 
 
     return null;
+}
+
+fn GetIntersection(array1: [bool; 9], array2: [bool; 9]) -> [bool; 9]{
+
+    let mut outputarray : [bool; 9] = [true; 9];
+
+    let mut hashset: HashSet<bool> = HashSet::new();
+
+
+
+
+
+    return outputarray;
+
 }
 
 
@@ -76,9 +91,38 @@ fn EvaluateByColumn(tile: Tile, board: [[Tile; 9]; 9]) -> [bool; 9]{
     return checking_array;
 }
 
-fn EvaluateSquare(){ // returns if a valid square
+fn EvaluateSquare(tile: Tile, Board: [[Tile; 9]; 9]) -> [bool;9]{ // returns if a valid square
+
+    let offsetX = tile.position.0 % 3; // using the modulous tells us the offset to the origion(top left)
+    let offsetY = tile.position.1 % 3;
+
+    let origion_pos_x = tile.position.0 - offsetX;
+    let origion_pos_y = tile.position.1 - offsetY;
+
+    let mut square: [Tile; 9] = [
+
+        Board[origion_pos_y][origion_pos_x],
+        Board[origion_pos_y + 1][origion_pos_x],
+        Board[origion_pos_y + 2][origion_pos_x],
+        Board[origion_pos_y][origion_pos_x + 1],
+        Board[origion_pos_y][origion_pos_x + 2],
+        Board[origion_pos_y + 1][origion_pos_x + 1],
+        Board[origion_pos_y + 1][origion_pos_x + 2],
+        Board[origion_pos_y + 2][origion_pos_x + 1],
+        Board[origion_pos_y + 2][origion_pos_x + 2],
+
+        //manually adds each tile into the array
+
+    ];
+
+    let mut checking_array : [bool; 9] = [true; 9];
+
+    for element in square.iter(){
+        if(element.found){
+            checking_array[element.final_guess] = false;
+        }
+    }
 
 
-
-
+    return checking_array;
 }
