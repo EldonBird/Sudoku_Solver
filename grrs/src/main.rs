@@ -131,7 +131,7 @@ fn evaluate_tile(tile_vec: (i8, i8), board: Board) -> [bool; 9] {
 // returns an array of booleans, the index is the possible number(-1) and true means possible valid, false means invalid
 fn evaluate_by_column(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
 
-    let column = board._board[tile_vec.0]; // 0=x 1=y
+    let column = board._board[tile_vec.0 as usize]; // 0=x 1=y
 
     let mut checking_array = [true; 9];
 
@@ -139,7 +139,7 @@ fn evaluate_by_column(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
     // ideally this will always work, although there isnt any guess work to find incorect options
     for element in column.iter(){
         if(element.found){
-            checking_array[element.final_guess] = false;
+            checking_array[element.final_guess as usize] = false;
         }
     }
 
@@ -152,14 +152,14 @@ fn evaluate_by_row(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
     let mut row: [Tile; 9] = [Tile::new_empty(); 9];
 
     for i in 0..8{
-        row[i] = board[i][tile_vec.1 as usize];
+        row[i as usize] = board._board[i as usize][tile_vec.1 as usize];
     }
 
     let mut checking_array = [true; 9];
 
     for element in row.iter(){
         if(element.found){
-            checking_array[element.final_guess] = false;
+            checking_array[element.final_guess as usize] = false;
         }
     }
 
@@ -178,15 +178,15 @@ fn evaluate_square(tile_vec: (i8, i8), board: &Board) -> [bool;9]{ // returns if
 
     let mut square: [Tile; 9] = [
 
-        _board[origion_pos_x][origion_pos_y],
-        _board[origion_pos_x + 1][origion_pos_y],
-        _board[origion_pos_x + 2][origion_pos_y],
-        _board[origion_pos_x][origion_pos_y + 1],
-        _board[origion_pos_x][origion_pos_y + 2],
-        _board[origion_pos_x + 1][origion_pos_y + 1],
-        _board[origion_pos_x + 1][origion_pos_y + 2],
-        _board[origion_pos_x + 2][origion_pos_y + 1],
-        _board[origion_pos_x + 2][origion_pos_y + 2],
+        _board[origion_pos_x as usize][origion_pos_y as usize],
+        _board[(origion_pos_x + 1) as usize][origion_pos_y as usize],
+        _board[(origion_pos_x + 2) as usize][origion_pos_y as usize],
+        _board[origion_pos_x as usize][(origion_pos_y + 1) as usize],
+        _board[origion_pos_x as usize][(origion_pos_y + 2) as usize],
+        _board[(origion_pos_x + 1) as usize][(origion_pos_y + 1) as usize],
+        _board[(origion_pos_x + 1)as usize][(origion_pos_y + 2) as usize],
+        _board[(origion_pos_x + 2) as usize][(origion_pos_y + 1) as usize],
+        _board[(origion_pos_x + 2) as usize][(origion_pos_y + 2) as usize],
 
         //manually adds each tile into the array
 
@@ -196,7 +196,7 @@ fn evaluate_square(tile_vec: (i8, i8), board: &Board) -> [bool;9]{ // returns if
 
     for element in square.iter(){
         if(element.found){
-            checking_array[element.final_guess] = false;
+            checking_array[element.final_guess as usize] = false;
         }
     }
 
