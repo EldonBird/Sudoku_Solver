@@ -27,6 +27,16 @@ impl Tile {
         }
 
     }
+    fn new_eval(old: &Tile, eval: [bool; 9]) -> Self{
+        Tile{
+
+            found: *old.found,
+            final_guess: *old.final_guess,
+            possible: eval
+
+        }
+    }
+
 }
 
 struct Board{
@@ -40,10 +50,10 @@ impl Board {
         }
     }
 
-    fn new(input: [[Tile; 9]; 9]) -> Self {
+    fn new(input: &Board) -> Self {
 
         Board{
-            _board: input,
+            _board: input._board,
         }
     }
 
@@ -52,7 +62,7 @@ impl Board {
 
 fn main() {
 
-    let board = ReadInNewBoard("Sudoku1.txt");
+    let board = read_in_board("Sudoku1.txt");
 
     let mut complete: bool = true;
 
@@ -71,7 +81,7 @@ fn main() {
 
 }
 use std::fs::read_to_string;
-fn ReadInNewBoard(filename: &str) -> Board {
+fn read_in_board(filename: &str) -> Board {
 
     //let mut result = Vec::new();
     let mut output: Board = Board::new_empty();
@@ -105,18 +115,52 @@ fn ReadInNewBoard(filename: &str) -> Board {
 }
 
 
+fn evaluate_whole_board(input: &Board) -> Board{
 
-/*fn EvaluateBoard(board: Board) -> Board {
+    let mut _output: Board = Board::new(input);
+
+    for x in 0..8{
+        for y in 0..8{
+
+            let evaluation = evaluate_tile((x,y), input);
 
 
-    return null;
-}*/
+            _output._board[x][y] = Tile::new_eval(*input._board[x][y], evaluation);
 
-fn evaluate_tile(tile_vec: (i8, i8), board: Board) -> [bool; 9] {
 
-    let column_eval = evaluate_by_column(tile_vec, &board);
-    let row_eval = evaluate_by_row(tile_vec, &board);
-    let square_eval = evaluate_square(tile_vec, &board);
+
+
+        }
+    }
+
+
+
+    _output
+}
+
+fn evaluate_hash(input: [bool; 9]) -> i8{
+
+    let mut iterator: i8 = 0;
+
+    for x in *input.iter(){
+
+        if(x){
+            iterator += 1;
+        }
+
+    }
+
+
+    iterator
+}
+
+
+
+fn evaluate_tile(tile_vec: (i8, i8), board: &Board) -> [bool; 9] {
+
+    let column_eval = evaluate_by_column(tile_vec, board);
+    let row_eval = evaluate_by_row(tile_vec, board);
+    let square_eval = evaluate_square(tile_vec, board);
 
 
     let mut result = [true; 9];
@@ -131,7 +175,7 @@ fn evaluate_tile(tile_vec: (i8, i8), board: Board) -> [bool; 9] {
 // returns an array of booleans, the index is the possible number(-1) and true means possible valid, false means invalid
 fn evaluate_by_column(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
 
-    let column = board._board[tile_vec.0 as usize]; // 0=x 1=y
+    let column = *board._board[tile_vec.0 as usize]; // 0=x 1=y
 
     let mut checking_array = [true; 9];
 
@@ -152,7 +196,7 @@ fn evaluate_by_row(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
     let mut row: [Tile; 9] = [Tile::new_empty(); 9];
 
     for i in 0..8{
-        row[i as usize] = board._board[i as usize][tile_vec.1 as usize];
+        row[i as usize] = *board._board[i as usize][tile_vec.1 as usize];
     }
 
     let mut checking_array = [true; 9];
@@ -168,7 +212,7 @@ fn evaluate_by_row(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
 
 fn evaluate_square(tile_vec: (i8, i8), board: &Board) -> [bool;9]{ // returns if a valid square
 
-    let _board = board._board;
+    let _board = *board._board;
 
     let offsetX = tile_vec.0 % 3; // using the modulous tells us the offset to the origion(top left)
     let offsetY = tile_vec.1 % 3;
