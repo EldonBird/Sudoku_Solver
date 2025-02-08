@@ -19,7 +19,7 @@ impl Tile {
             possible: [true; 9],
         }
     }
-    fn new_found(fg: i8) -> Self{
+    fn new_found(fg: i8) -> Self{ // locks in your final guess and sets the new values
         Tile{
             found: true,
             final_guess: fg,
@@ -27,7 +27,7 @@ impl Tile {
         }
 
     }
-    fn new_eval(old: &Tile, eval: [bool; 9]) -> Self{
+    fn new_eval(old: &Tile, eval: [bool; 9]) -> Self{ // update the evaluation function
         Tile{
 
             found: *old.found,
@@ -35,6 +35,41 @@ impl Tile {
             possible: eval
 
         }
+    }
+
+    fn lock_in_guess(t: &Tile) -> i8{ // finds the final guess
+
+        for i in 0..8{
+            if(*t.possible[i]){
+                return i as i8;
+            }
+        }
+
+        panic!("Paniced: could not lock in the final guess: {}", t)
+
+
+    }
+
+    fn ready_to_guess(t: &Tile) -> bool{ // is the checking method to find if you can make a guess
+
+        let mut iterator: i8 = 0;
+
+        for i in *t.possible.iter(){
+            if(i){
+                iterator += 1;
+            }
+        }
+
+        if(iterator == 1){
+            return true;
+        }
+        else if iterator < 1{
+            panic!("THERE IS NO POSSIBLE VALUE FOR {}", t);
+        }
+
+
+
+        false
     }
 
 }
@@ -62,24 +97,29 @@ impl Board {
 
 fn main() {
 
-    let board = read_in_board("Sudoku1.txt");
+    let mut board = read_in_board("Sudoku1.txt");
 
-    let mut complete: bool = true;
+    let fin = sudoku(board);
 
+}
 
-    while complete{
+fn sudoku(board: Board) -> Board{
 
-
-
-
-
+    let evaluation = evaluate_whole_board(&board);
 
 
-    }
+
+
+
 
 
 
 }
+
+
+
+
+
 use std::fs::read_to_string;
 fn read_in_board(filename: &str) -> Board {
 
@@ -122,12 +162,13 @@ fn evaluate_whole_board(input: &Board) -> Board{
     for x in 0..8{
         for y in 0..8{
 
+            if(input[x as usize][y as usize]){
+                
+            }
+
             let evaluation = evaluate_tile((x,y), input);
 
-
             _output._board[x][y] = Tile::new_eval(*input._board[x][y], evaluation);
-
-
 
 
         }
@@ -137,6 +178,36 @@ fn evaluate_whole_board(input: &Board) -> Board{
 
     _output
 }
+
+
+// this functions updates the tiles "found" and "guess" atributes.
+fn collapse(input: Board) -> Board{
+
+    let mut _output: Board = Board::new(&input);
+
+    for x in 0..8{
+        for y in 0..8{
+
+            if input[x as usize][y as usize].found {
+                _output[x as usize][y as usize] = input[x as usize][y as usize];
+            }
+            else if Tile::ready_to_guess(&input[x as usize][y as usize]) { // if there is only 1 possible solution, then why not say that it is true!
+
+                let guess: i8 = Tile::lock_in_guess(&input[x as usize][y as usize]);
+
+                _output[x as usize][y as usize] = Tile::new_found(guess);
+
+            }
+            else{
+                _output[x as usize][y as usize] = input[x as usize][y as usize];
+            }
+        }
+    }
+
+
+    _output
+}
+
 
 fn evaluate_hash(input: [bool; 9]) -> i8{
 
@@ -214,11 +285,11 @@ fn evaluate_square(tile_vec: (i8, i8), board: &Board) -> [bool;9]{ // returns if
 
     let _board = *board._board;
 
-    let offsetX = tile_vec.0 % 3; // using the modulous tells us the offset to the origion(top left)
-    let offsetY = tile_vec.1 % 3;
+    let offset_x = tile_vec.0 % 3; // using the modulous tells us the offset to the origion(top left)
+    let offset_y = tile_vec.1 % 3;
 
-    let origion_pos_x = tile_vec.0 - offsetX;
-    let origion_pos_y = tile_vec.1 - offsetY;
+    let origion_pos_x = tile_vec.0 - offset_x;
+    let origion_pos_y = tile_vec.1 - offset_y;
 
     let mut square: [Tile; 9] = [
 
