@@ -11,7 +11,7 @@ This project is for solving simple sudoku boards. I have had this idea in the ba
   - Board Completion
 
 ---
-[Video](https://www.youtube.com/watch?v=gKMs8hDBFJs)
+[Video](https://youtu.be/2HNGhPE6oL4)
 ---
 
 # Development Environment
