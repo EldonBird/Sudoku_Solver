@@ -7,7 +7,7 @@
 #[derive(Copy, Clone)]
 struct Tile{
     found: bool,
-    final_guess: i8, // for testing, but the found solution
+    final_guess: i8, // 0-8, if you add 1, you would get what is expected from a sudoku board.
     possible: [bool; 9], // all possible solutions, true if available, false if not 0 = 1, so 8 = 9
 }
 
@@ -20,6 +20,11 @@ impl Tile {
         }
     }
     fn new_found(fg: i8) -> Self{ // locks in your final guess and sets the new values
+
+        if fg < 1 || fg > 9{
+            panic!("Invalid value");
+        }
+
         Tile{
             found: true,
             final_guess: fg,
@@ -39,17 +44,21 @@ impl Tile {
 
     fn lock_in_guess(t: &Tile) -> i8{ // finds the final guess
 
-        for i in 0..8{
-            if(t.possible[i]){
-                return i as i8;
+        let mut found_index = -1;
+        let mut count = 0;
+
+        for (index, &value) in t.possible.iter().enumerate() {
+            if value {
+                found_index = index as i8 + 1;
+                count += 1;
             }
         }
 
-
-        panic!("Paniced: could not lock in the final guess");
-
-        -1
-
+        if count == 1 {
+            found_index
+        } else {
+            -1
+        }
 
     }
 
@@ -58,12 +67,12 @@ impl Tile {
         let mut iterator: i8 = 0;
 
         for i in t.possible.iter(){
-            if(*i){
+            if *i{
                 iterator += 1;
             }
         }
 
-        if(iterator == 1){
+        if iterator == 1{
             return true;
         }
         else if iterator < 1{
@@ -88,22 +97,6 @@ impl Board {
         }
     }
 
-    fn output(input: &Board) -> String{
-
-        let mut tmp: String = String::from("");
-
-        for x in 0..8{
-            for y in 0..8{
-
-                let string = tmp.add(input._board[x][y].final_guess.to_string().as_str());
-
-            }
-        }
-
-        tmp
-
-    }
-
     fn new(input: &Board) -> Self {
 
         Board{
@@ -113,8 +106,8 @@ impl Board {
 
     fn finished(input: &Board) -> bool{ // tells you if the board is completed
 
-        for x in 0..8{
-            for y in 0..8{
+        for x in 0..9{
+            for y in 0..9{
 
                 if !input._board[x][y].found{
                     return false;
@@ -130,22 +123,50 @@ impl Board {
 
 fn main() {
 
-    let mut board = read_in_board("Sudoku1.txt");
+    let board = read_in_board("Sudoku1.txt");
 
-    let fin = sudoku(board);
+    println!("Input Board, ");
 
+
+    output_board(&board);
+
+    let fin = sudoku(board, 0);
+
+    println!("Final Board, iterations : {}", fin.1);
+
+    output_board(&fin.0);
 }
 
-fn sudoku(board: Board) -> Board{
+fn sudoku(board: Board, current: i8) -> (Board, i8){
+    let evaluation: Board= evaluate_whole_board(&board);
+    let collapsed: Board = collapse(evaluation);
 
-    let evaltation: Board= evaluate_whole_board(&board);
 
-    let collapsed: Board = collapse(evaltation);
-
-    if(Board::finished(&collapsed)){
-        return collapsed;
+    if Board::finished(&collapsed){
+        return (collapsed, current);
     }
-    sudoku(collapsed)
+
+    if board_comparison(&board, &collapsed){
+        println!("Whoops Boards the same");
+        return (collapsed, current);
+    }
+
+
+    sudoku(collapsed, current+1)
+}
+
+fn board_comparison(board1: &Board, board2: &Board) -> bool{
+
+    for x in 0..9 {
+        for y in 0..9 {
+            if board1._board[x][y].final_guess != board2._board[x][y].final_guess
+                || board1._board[x][y].found != board2._board[x][y].found {
+                return false;
+            }
+        }
+    }
+    true
+
 }
 
 
@@ -186,23 +207,30 @@ fn read_in_board(filename: &str) -> Board {
     return output;
 }
 
+fn test_output_board(board: &Board){
 
-use std::fs::File;
-use std::io::{BufWriter, Write};
-use std::ops::Add;
-use std::ptr::null;
+    for x in 0..9{
+        for y in 0..9{
+            print!("{}", board._board[x][y].final_guess);
+        }
+    }
+}
+fn output_board(board: &Board){
 
-fn output_board(filename: String, board: &Board){
+    for x in 0..9 {
+        if x > 0 {
+            println!();
+        }
 
-    let f = File::create(filename).expect("unable to create file");
-    let mut f = BufWriter::new(f);
+        for y in 0..9 {
+            print!("{} ", board._board[x][y].final_guess);
 
-
-
-
-
-
-
+            if y % 3 == 2 && y < 8 {
+                print!("| ");
+            }
+        }
+    }
+    println!();
 }
 
 
@@ -210,10 +238,10 @@ fn evaluate_whole_board(input: &Board) -> Board{
 
     let mut _output: Board = Board::new(input);
 
-    for x in 0..8{
-        for y in 0..8{
+    for x in 0..9{
+        for y in 0..9{
 
-            if(input._board[x as usize][y as usize].found){
+            if input._board[x as usize][y as usize].found{
                 _output._board[x][y] = input._board[x as usize][y as usize];
             }
 
@@ -236,18 +264,24 @@ fn collapse(input: Board) -> Board{
 
     let mut _output: Board = Board::new(&input);
 
-    for x in 0..8{
-        for y in 0..8{
+    for x in 0..9{
+        for y in 0..9{
 
             if input._board[x as usize][y as usize].found {
                 _output._board[x as usize][y as usize] = input._board[x as usize][y as usize];
             }
             else if Tile::ready_to_guess(&input._board[x as usize][y as usize]) { // if there is only 1 possible solution, then why not say that it is true!
 
+
+                // THIS IS THE INDEX!!!!
                 let guess: i8 = Tile::lock_in_guess(&input._board[x as usize][y as usize]);
 
-                _output._board[x as usize][y as usize] = Tile::new_found(guess);
-
+                if guess >= 0{
+                    _output._board[x as usize][y as usize] = Tile::new_found(guess);
+                }
+                else{
+                    _output._board[x as usize][y as usize] = input._board[x as usize][y as usize];
+                }
             }
             else{
                 _output._board[x as usize][y as usize] = input._board[x as usize][y as usize];
@@ -260,24 +294,6 @@ fn collapse(input: Board) -> Board{
 }
 
 
-fn evaluate_hash(input: [bool; 9]) -> i8{
-
-    let mut iterator: i8 = 0;
-
-    for x in input.iter(){
-
-        if(*x){
-            iterator += 1;
-        }
-
-    }
-
-
-    iterator
-}
-
-
-
 fn evaluate_tile(tile_vec: (i8, i8), board: &Board) -> [bool; 9] {
 
     let column_eval = evaluate_by_column(tile_vec, board);
@@ -286,7 +302,7 @@ fn evaluate_tile(tile_vec: (i8, i8), board: &Board) -> [bool; 9] {
 
 
     let mut result = [true; 9];
-    for i in 0..8{
+    for i in 0..9{
         result[i] = column_eval[i] && row_eval[i] && square_eval[i];
     }
 
@@ -297,35 +313,32 @@ fn evaluate_tile(tile_vec: (i8, i8), board: &Board) -> [bool; 9] {
 // returns an array of booleans, the index is the possible number(-1) and true means possible valid, false means invalid
 fn evaluate_by_column(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
 
-    let column = board._board[tile_vec.0 as usize]; // 0=x 1=y
-
     let mut checking_array = [true; 9];
 
 
-    // ideally this will always work, although there isnt any guess work to find incorect options
-    for element in column.iter(){
-        if(element.found){
-            checking_array[element.final_guess as usize] = false;
+    for y in 0..9{
+
+        if board._board[tile_vec.0 as usize][y].found{
+            let guess = board._board[tile_vec.0 as usize][y].final_guess;
+            if guess > 0 && guess <= 9{
+                checking_array[(guess - 1) as usize] = false;
+            }
         }
     }
-
 
     checking_array
 }
 
 fn evaluate_by_row(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
 
-    let mut row: [Tile; 9] = [Tile::new_empty(); 9];
-
-    for i in 0..8{
-        row[i as usize] = board._board[i as usize][tile_vec.1 as usize];
-    }
-
     let mut checking_array = [true; 9];
 
-    for element in row.iter(){
-        if(element.found){
-            checking_array[element.final_guess as usize] = false;
+    for x in 0..9{
+        if board._board[x][tile_vec.1 as usize].found{
+            let guess = board._board[x][tile_vec.1 as usize].final_guess;
+            if guess > 0 && guess <= 9{
+                checking_array[(guess - 1) as usize] = false;
+            }
         }
     }
 
@@ -334,38 +347,26 @@ fn evaluate_by_row(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
 
 fn evaluate_square(tile_vec: (i8, i8), board: &Board) -> [bool;9]{ // returns if a valid square
 
-    let _board = board._board;
+    let origin_x = (tile_vec.0 / 3) * 3;
+    let origin_y = (tile_vec.1 / 3) * 3;
 
-    let offset_x = tile_vec.0 % 3; // using the modulous tells us the offset to the origion(top left)
-    let offset_y = tile_vec.1 % 3;
+    let mut checking_array = [true; 9];
 
-    let origion_pos_x = tile_vec.0 - offset_x;
-    let origion_pos_y = tile_vec.1 - offset_y;
+    for dx in 0..3 {
+        for dy in 0..3 {
+            let x = (origin_x + dx) as usize;
+            let y = (origin_y + dy) as usize;
 
-    let mut square: [Tile; 9] = [
 
-        _board[origion_pos_x as usize][origion_pos_y as usize],
-        _board[(origion_pos_x + 1) as usize][origion_pos_y as usize],
-        _board[(origion_pos_x + 2) as usize][origion_pos_y as usize],
-        _board[origion_pos_x as usize][(origion_pos_y + 1) as usize],
-        _board[origion_pos_x as usize][(origion_pos_y + 2) as usize],
-        _board[(origion_pos_x + 1) as usize][(origion_pos_y + 1) as usize],
-        _board[(origion_pos_x + 1)as usize][(origion_pos_y + 2) as usize],
-        _board[(origion_pos_x + 2) as usize][(origion_pos_y + 1) as usize],
-        _board[(origion_pos_x + 2) as usize][(origion_pos_y + 2) as usize],
 
-        //manually adds each tile into the array
-
-    ];
-
-    let mut checking_array : [bool; 9] = [true; 9];
-
-    for element in square.iter(){
-        if(element.found){
-            checking_array[element.final_guess as usize] = false;
+            if board._board[x][y].found {
+                let guess = board._board[x][y].final_guess;
+                if guess > 0 && guess <= 9 {
+                    checking_array[(guess - 1) as usize] = false;
+                }
+            }
         }
     }
-
 
     checking_array
 }
