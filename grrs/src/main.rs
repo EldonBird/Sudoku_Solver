@@ -30,8 +30,8 @@ impl Tile {
     fn new_eval(old: &Tile, eval: [bool; 9]) -> Self{ // update the evaluation function
         Tile{
 
-            found: *old.found,
-            final_guess: *old.final_guess,
+            found: old.found,
+            final_guess: old.final_guess,
             possible: eval
 
         }
@@ -40,12 +40,15 @@ impl Tile {
     fn lock_in_guess(t: &Tile) -> i8{ // finds the final guess
 
         for i in 0..8{
-            if(*t.possible[i]){
+            if(t.possible[i]){
                 return i as i8;
             }
         }
 
-        panic!("Paniced: could not lock in the final guess: {}", t)
+
+        panic!("Paniced: could not lock in the final guess");
+
+        -1
 
 
     }
@@ -54,8 +57,8 @@ impl Tile {
 
         let mut iterator: i8 = 0;
 
-        for i in *t.possible.iter(){
-            if(i){
+        for i in t.possible.iter(){
+            if(*i){
                 iterator += 1;
             }
         }
@@ -64,7 +67,7 @@ impl Tile {
             return true;
         }
         else if iterator < 1{
-            panic!("THERE IS NO POSSIBLE VALUE FOR {}", t);
+            panic!("THERE IS NO POSSIBLE VALUE FOR READY");
         }
 
 
@@ -85,12 +88,42 @@ impl Board {
         }
     }
 
+    fn output(input: &Board) -> String{
+
+        let mut tmp: String = String::from("");
+
+        for x in 0..8{
+            for y in 0..8{
+
+                let string = tmp.add(input._board[x][y].final_guess.to_string().as_str());
+
+            }
+        }
+
+        tmp
+
+    }
+
     fn new(input: &Board) -> Self {
 
         Board{
             _board: input._board,
         }
     }
+
+    fn finished(input: &Board) -> bool{ // tells you if the board is completed
+
+        for x in 0..8{
+            for y in 0..8{
+
+                if !input._board[x][y].found{
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
 
 }
 
@@ -105,15 +138,14 @@ fn main() {
 
 fn sudoku(board: Board) -> Board{
 
-    let evaluation = evaluate_whole_board(&board);
+    let evaltation: Board= evaluate_whole_board(&board);
 
+    let collapsed: Board = collapse(evaltation);
 
-
-
-
-
-
-
+    if(Board::finished(&collapsed)){
+        return collapsed;
+    }
+    sudoku(collapsed)
 }
 
 
@@ -155,6 +187,25 @@ fn read_in_board(filename: &str) -> Board {
 }
 
 
+use std::fs::File;
+use std::io::{BufWriter, Write};
+use std::ops::Add;
+use std::ptr::null;
+
+fn output_board(filename: String, board: &Board){
+
+    let f = File::create(filename).expect("unable to create file");
+    let mut f = BufWriter::new(f);
+
+
+
+
+
+
+
+}
+
+
 fn evaluate_whole_board(input: &Board) -> Board{
 
     let mut _output: Board = Board::new(input);
@@ -162,13 +213,13 @@ fn evaluate_whole_board(input: &Board) -> Board{
     for x in 0..8{
         for y in 0..8{
 
-            if(input[x as usize][y as usize]){
-                
+            if(input._board[x as usize][y as usize].found){
+                _output._board[x][y] = input._board[x as usize][y as usize];
             }
 
-            let evaluation = evaluate_tile((x,y), input);
+            let evaluation = evaluate_tile((x as i8, y as i8), input);
 
-            _output._board[x][y] = Tile::new_eval(*input._board[x][y], evaluation);
+            _output._board[x][y] = Tile::new_eval(&input._board[x][y], evaluation);
 
 
         }
@@ -188,18 +239,18 @@ fn collapse(input: Board) -> Board{
     for x in 0..8{
         for y in 0..8{
 
-            if input[x as usize][y as usize].found {
-                _output[x as usize][y as usize] = input[x as usize][y as usize];
+            if input._board[x as usize][y as usize].found {
+                _output._board[x as usize][y as usize] = input._board[x as usize][y as usize];
             }
-            else if Tile::ready_to_guess(&input[x as usize][y as usize]) { // if there is only 1 possible solution, then why not say that it is true!
+            else if Tile::ready_to_guess(&input._board[x as usize][y as usize]) { // if there is only 1 possible solution, then why not say that it is true!
 
-                let guess: i8 = Tile::lock_in_guess(&input[x as usize][y as usize]);
+                let guess: i8 = Tile::lock_in_guess(&input._board[x as usize][y as usize]);
 
-                _output[x as usize][y as usize] = Tile::new_found(guess);
+                _output._board[x as usize][y as usize] = Tile::new_found(guess);
 
             }
             else{
-                _output[x as usize][y as usize] = input[x as usize][y as usize];
+                _output._board[x as usize][y as usize] = input._board[x as usize][y as usize];
             }
         }
     }
@@ -213,9 +264,9 @@ fn evaluate_hash(input: [bool; 9]) -> i8{
 
     let mut iterator: i8 = 0;
 
-    for x in *input.iter(){
+    for x in input.iter(){
 
-        if(x){
+        if(*x){
             iterator += 1;
         }
 
@@ -246,7 +297,7 @@ fn evaluate_tile(tile_vec: (i8, i8), board: &Board) -> [bool; 9] {
 // returns an array of booleans, the index is the possible number(-1) and true means possible valid, false means invalid
 fn evaluate_by_column(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
 
-    let column = *board._board[tile_vec.0 as usize]; // 0=x 1=y
+    let column = board._board[tile_vec.0 as usize]; // 0=x 1=y
 
     let mut checking_array = [true; 9];
 
@@ -267,7 +318,7 @@ fn evaluate_by_row(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
     let mut row: [Tile; 9] = [Tile::new_empty(); 9];
 
     for i in 0..8{
-        row[i as usize] = *board._board[i as usize][tile_vec.1 as usize];
+        row[i as usize] = board._board[i as usize][tile_vec.1 as usize];
     }
 
     let mut checking_array = [true; 9];
@@ -283,7 +334,7 @@ fn evaluate_by_row(tile_vec: (i8, i8), board: &Board) -> [bool; 9]{
 
 fn evaluate_square(tile_vec: (i8, i8), board: &Board) -> [bool;9]{ // returns if a valid square
 
-    let _board = *board._board;
+    let _board = board._board;
 
     let offset_x = tile_vec.0 % 3; // using the modulous tells us the offset to the origion(top left)
     let offset_y = tile_vec.1 % 3;
